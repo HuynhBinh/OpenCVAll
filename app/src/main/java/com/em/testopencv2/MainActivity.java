@@ -272,7 +272,7 @@ public class MainActivity extends ActionBarActivity
             MatOfPoint2f scene = new MatOfPoint2f(pointScene);
 
 
-            Mat H = Calib3d.findHomography(obj, scene, Calib3d.RANSAC, 1);
+            Mat H = Calib3d.findHomography(obj, scene, Calib3d.RANSAC, 9);
 
 
             MatOfPoint2f obj_corners = new MatOfPoint2f();

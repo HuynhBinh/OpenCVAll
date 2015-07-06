@@ -1,39 +1,7 @@
 package org.opencv.samples.tutorial3;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.ListIterator;
-
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.calib3d.Calib3d;
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfDMatch;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
-import org.opencv.features2d.DMatch;
-import org.opencv.features2d.DescriptorExtractor;
-import org.opencv.features2d.DescriptorMatcher;
-import org.opencv.features2d.FeatureDetector;
-import org.opencv.features2d.Features2d;
-import org.opencv.features2d.KeyPoint;
-import org.opencv.highgui.Highgui;
-import org.opencv.imgproc.Imgproc;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
@@ -47,6 +15,35 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
+import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.features2d.DMatch;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.features2d.Features2d;
+import org.opencv.features2d.KeyPoint;
+import org.opencv.highgui.Highgui;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.ListIterator;
 
 public class Tutorial3Activity extends Activity implements CvCameraViewListener2, OnTouchListener
 {
@@ -87,6 +84,23 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     MatOfPoint2f scene;// = new MatOfPoint2f();
 
     Mat img_scene;
+
+    DetectThread detectThread;
+    Thread thread;
+    Mat SceneMat;
+    boolean isRun = false;
+
+    Point p0;
+    Point p1;
+    Point p2;
+    Point p3;
+
+    Integer global = 0;
+
+    MatOfDMatch good_matches;// = new MatOfDMatch();
+
+    List<Point> listPointScene;
+
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
     {
@@ -139,6 +153,7 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     public void onPause()
     {
         super.onPause();
+        isRun = false;
         if (mOpenCvCameraView != null) mOpenCvCameraView.disableView();
     }
 
@@ -159,6 +174,18 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     {
         try
         {
+
+            detectThread = null;
+
+            if (detectThread == null)
+            {
+                detectThread = new DetectThread();
+                thread = new Thread(detectThread);
+                thread.setPriority(Thread.MIN_PRIORITY);
+                thread.start();
+            }
+
+
             //-- Step 1: Detect the keypoints using SURF Detector
             featureDetector = FeatureDetector.create(FeatureDetector.FAST);
 
@@ -168,9 +195,10 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             //-- Step 3: Matching descriptor vectors using FLANN matcher
             matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_L1);
 
-            img_object = Utils.loadResource(this, R.drawable.cardobj1, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+            img_object = Utils.loadResource(this, R.drawable.cardobj, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
 
-            img_scene = Utils.loadResource(this, R.drawable.cardscene, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+            img_scene = new Mat();
+            //img_scene = Utils.loadResource(this, R.drawable.cardscene, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
 
             matches = new MatOfDMatch();
 
@@ -191,8 +219,18 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             scene_corners = new MatOfPoint2f();
             min_dist = 9999999;
 
+            p0 = new Point(0, 0);
+            p1 = new Point(0, 0);
+            p2 = new Point(0, 0);
+            p3 = new Point(0, 0);
 
-        } catch (Exception ex)
+            good_matches = new MatOfDMatch();
+
+            listPointScene = new ArrayList<>();
+
+
+        }
+        catch (Exception ex)
         {
 
         }
@@ -210,21 +248,17 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
     }
 
-    private Mat detectObjectLiteVersion(Mat img)
+    private void detectObject()
     {
+        featureDetector.detect(img_scene, keypoints_scene);
+        featureDetector.detect(img_object, keypoints_object);
 
-        try
+        extractor.compute(img_object, keypoints_object, descriptors_object);
+        extractor.compute(img_scene, keypoints_scene, descriptors_scene);
+
+
+        if (!descriptors_scene.empty())
         {
-
-            //img.copyTo(img_scene);
-            //img_scene = img;
-
-            featureDetector.detect(img_scene, keypoints_scene);
-            featureDetector.detect(img_object, keypoints_object);
-
-            extractor.compute(img_object, keypoints_object, descriptors_object);
-            extractor.compute(img_scene, keypoints_scene, descriptors_scene);
-
             matcher.match(descriptors_object, descriptors_scene, matches);
 
             //
@@ -241,13 +275,14 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
                 {
                     min_dist = dist;
                 }
-
             }
 
             Log.e("Min", min_dist + "");
 
 
-            threeMinDist = 2.5 * min_dist;
+            threeMinDist = 3 * min_dist;
+
+            listGoodMatches.removeAll(listGoodMatches);
 
             for (int i = 0; i < size; i++)
             {
@@ -257,7 +292,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
                 if (distance < threeMinDist)
                 {
-                    //good_matches.push_back(matches.col(i));
                     listGoodMatches.add(dMatch);
                 }
             }
@@ -269,58 +303,124 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             Log.e("Good Matches", listGoodMatches.size() + "");
             //
 
-
-            Point pointObj[] = new Point[listGoodMatches.size()];
-            Point pointScene[] = new Point[listGoodMatches.size()];
-
-            listKeyPointObject = keypoints_object.toList();
-            listKeyPointScene = keypoints_scene.toList();
-
-            for (int i = 0; i < listGoodMatches.size(); i++)
+            if (listGoodMatches.size() > 4)
             {
-                //-- Get the keypoints from the good matches
-                pointObj[i] = listKeyPointObject.get(listGoodMatches.get(i).queryIdx).pt;
-                pointScene[i] = listKeyPointScene.get(listGoodMatches.get(i).trainIdx).pt;
+                Point pointObj[] = new Point[listGoodMatches.size()];
+                Point pointScene[] = new Point[listGoodMatches.size()];
+
+                listKeyPointObject = keypoints_object.toList();
+                listKeyPointScene = keypoints_scene.toList();
+
+
+                //listPointScene.removeAll(listPointScene);
+                for (int i = 0; i < listGoodMatches.size(); i++)
+                {
+                    //-- Get the keypoints from the good matches
+                    pointObj[i] = listKeyPointObject.get(listGoodMatches.get(i).queryIdx).pt;
+                    pointScene[i] = listKeyPointScene.get(listGoodMatches.get(i).trainIdx).pt;
+
+                    //listPointScene.add(listKeyPointScene.get(listGoodMatches.get(i).trainIdx).pt);
+                }
+
+
+                obj.fromArray(pointObj);
+                scene.fromArray(pointScene);
+
+                Log.e("Before findHomography", "");
+
+                H = Calib3d.findHomography(obj, scene, Calib3d.RANSAC, 9);
+
+                Log.e("AFTERRR findHomography", "");
+
+                pointObjConners[0] = new Point(0, 0);
+                pointObjConners[1] = new Point(img_object.cols(), 0);
+                pointObjConners[2] = new Point(img_object.cols(), img_object.rows());
+                pointObjConners[3] = new Point(0, img_object.rows());
+
+                obj_corners.fromArray(pointObjConners);
+
+
+                Core.perspectiveTransform(obj_corners, scene_corners, H);
+
+
+                p0 = new Point(scene_corners.toList().get(0).x, scene_corners.toList().get(0).y + 0);
+                p1 = new Point(scene_corners.toList().get(1).x, scene_corners.toList().get(1).y + 0);
+                p2 = new Point(scene_corners.toList().get(2).x, scene_corners.toList().get(2).y + 0);
+                p3 = new Point(scene_corners.toList().get(3).x, scene_corners.toList().get(3).y + 0);
+
+                Log.e("POINT THREAD", p0.toString() + p1.toString() + p2.toString() + p3.toString());
+
+
+                Log.e("detect ok", "detect ok");
 
             }
 
-            obj.fromArray(pointObj);
-            scene.fromArray(pointScene);
 
-            H = Calib3d.findHomography(obj, scene, Calib3d.RANSAC, 5);
+        }
+        else
+        {
+            Log.e("No descritor", "No descritor");
+        }
+    }
+
+    class DetectThread implements Runnable
+    {
+        @Override
+        public void run()
+        {
+
+            while (true)
+            {
+                if (isRun == true)
+                {
+                    synchronized (img_scene)
+                    {
+                        detectObject();
+                    }
+                }
+
+            }
 
 
-            pointObjConners[0] = new Point(0, 0);
-            pointObjConners[1] = new Point(img_object.cols(), 0);
-            pointObjConners[2] = new Point(img_object.cols(), img_object.rows());
-            pointObjConners[3] = new Point(0, img_object.rows());
-
-            obj_corners.fromArray(pointObjConners);
+        }
+    }
 
 
-            Core.perspectiveTransform(obj_corners, scene_corners, H);
+    private Mat detectObjectLiteVersion(Mat img)
+    {
+        try
+        {
+            img_scene = img.clone();
+
+            isRun = true;
+
+            //detectObject();
 
 
-            //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-            Point p0 = new Point(scene_corners.toList().get(0).x, scene_corners.toList().get(0).y + 0);
-            Point p1 = new Point(scene_corners.toList().get(1).x, scene_corners.toList().get(1).y + 0);
-            Point p2 = new Point(scene_corners.toList().get(2).x, scene_corners.toList().get(2).y + 0);
-            Point p3 = new Point(scene_corners.toList().get(3).x, scene_corners.toList().get(3).y + 0);
+           /* if (listPointScene != null && !listPointScene.isEmpty())
+            {
+                for (int i = 0; i < listPointScene.size(); i++)
+                {
+                    Core.circle(img, listPointScene.get(i), 5, Scalar.all(1), 2);
+
+                }
+            }*/
 
 
             Scalar scalar = new Scalar(0, 255, 0);
 
+            //Log.e("POINT CAP", p0.toString() + p1.toString());
             Core.line(img, p0, p1, scalar, 4);
             Core.line(img, p1, p2, scalar, 4);
             Core.line(img, p2, p3, scalar, 4);
             Core.line(img, p3, p0, scalar, 4);
 
-            Log.e("P1", "á");
 
             return img;
 
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.e("", "");
             return null;
@@ -383,7 +483,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         {
             mOpenCvCameraView.setEffect((String) item.getTitle());
             Toast.makeText(this, mOpenCvCameraView.getEffect(), Toast.LENGTH_SHORT).show();
-        } else if (item.getGroupId() == 2)
+        }
+        else if (item.getGroupId() == 2)
         {
             int id = item.getItemId();
             Size resolution = mResolutionList.get(id);
@@ -546,7 +647,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             return img_matches;
 
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.e("", "");
             return null;
