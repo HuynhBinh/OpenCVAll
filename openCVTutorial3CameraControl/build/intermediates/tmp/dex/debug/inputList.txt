@@ -1,0 +1,2 @@
+D:\Github\OpenCVAll\openCVTutorial3CameraControl\build\intermediates\classes\debug
+D:\Github\OpenCVAll\openCVTutorial3CameraControl\build\intermediates\pre-dexed\debug\classes-a88202078823357fc0bff98a39c2bb802792697c.jar
