@@ -41,9 +41,12 @@ import org.opencv.highgui.Highgui;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Tutorial3Activity extends Activity implements CvCameraViewListener2, OnTouchListener
 {
@@ -87,7 +90,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
     DetectThread detectThread;
     Thread thread;
-    Mat SceneMat;
     boolean isRun = false;
 
     Point p0;
@@ -95,11 +97,18 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     Point p2;
     Point p3;
 
-    Integer global = 0;
+    boolean isProcessing = false;
+
+
 
     MatOfDMatch good_matches;// = new MatOfDMatch();
 
     List<Point> listPointScene;
+
+    ReentrantReadWriteLock reentrantReadWriteLock ;
+
+    Lock readLock;
+    Lock writeLock;
 
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this)
@@ -147,6 +156,10 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        reentrantReadWriteLock = new ReentrantReadWriteLock();
+        readLock = reentrantReadWriteLock.readLock();
+        writeLock = reentrantReadWriteLock.writeLock();
     }
 
     @Override
@@ -154,6 +167,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     {
         super.onPause();
         isRun = false;
+        thread.interrupt();
+        thread = null;
         if (mOpenCvCameraView != null) mOpenCvCameraView.disableView();
     }
 
@@ -248,18 +263,29 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
     }
 
+
+
     private void detectObject()
     {
+
+        isProcessing = true;
+
+        readLock.lock();
+
         featureDetector.detect(img_scene, keypoints_scene);
         featureDetector.detect(img_object, keypoints_object);
 
         extractor.compute(img_object, keypoints_object, descriptors_object);
         extractor.compute(img_scene, keypoints_scene, descriptors_scene);
 
+        isProcessing = false;
+
 
         if (!descriptors_scene.empty())
         {
             matcher.match(descriptors_object, descriptors_scene, matches);
+
+            readLock.unlock();
 
             //
             listMatches = matches.toList();
@@ -302,6 +328,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             Log.e("Matches", listMatches.size() + "");
             Log.e("Good Matches", listGoodMatches.size() + "");
             //
+
+
 
             if (listGoodMatches.size() > 4)
             {
@@ -360,6 +388,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         else
         {
             Log.e("No descritor", "No descritor");
+            isProcessing = false;
+            readLock.unlock();
         }
     }
 
@@ -373,10 +403,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             {
                 if (isRun == true)
                 {
-                    synchronized (img_scene)
-                    {
-                        detectObject();
-                    }
+                    detectObject();
+
                 }
 
             }
@@ -390,9 +418,21 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     {
         try
         {
-            img_scene = img.clone();
+            writeLock.lock();
+
+            try
+            {
+                img_scene = img.clone();
+            }
+            finally
+            {
+                writeLock.unlock();
+            }
+
+
 
             isRun = true;
+
 
             //detectObject();
 
@@ -430,12 +470,7 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
     }
 
-    private Mat tranform(Mat mat)
-    {
-        Core.line(mat, new Point(0, 0), new Point(50, 50), new Scalar(0, 255, 0), 4);
 
-        return mat;
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
@@ -511,150 +546,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         return false;
     }
 
-    private Mat detectObjectFull(Mat imgscene)
-    {
-
-        try
-        {
-            Mat img_object = Utils.loadResource(Tutorial3Activity.this, R.drawable.cardobj, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
-            Mat img_scene = imgscene;
-            MatOfKeyPoint keypoints_object = new MatOfKeyPoint();
-            MatOfKeyPoint keypoints_scene = new MatOfKeyPoint();
 
 
-            //-- Step 1: Detect the keypoints using SURF Detector
-            FeatureDetector featureDetector = FeatureDetector.create(FeatureDetector.FAST);
-
-
-            featureDetector.detect(img_scene, keypoints_scene);
-            featureDetector.detect(img_object, keypoints_object);
-
-
-            //-- Step 2: Calculate descriptors (feature vectors)
-            DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.FREAK);
-
-            Mat descriptors_object = new Mat();
-            Mat descriptors_scene = new Mat();
-
-            extractor.compute(img_object, keypoints_object, descriptors_object);
-            extractor.compute(img_scene, keypoints_scene, descriptors_scene);
-
-            //-- Step 3: Matching descriptor vectors using FLANN matcher
-            DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_L1);
-            MatOfDMatch matches = new MatOfDMatch();
-            matcher.match(descriptors_object, descriptors_scene, matches);
-
-            List<DMatch> listMatches = matches.toList();
-            //double max_dist = 0;
-            double min_dist = 9999;
-
-            //-- Quick calculation of max and min distances between keypoints
-            for (int i = 0; i < descriptors_object.rows(); i++)
-            {
-                double dist = listMatches.get(i).distance;
-                if (dist < min_dist) min_dist = dist;
-                //if (dist > max_dist) max_dist = dist;
-            }
-
-            Log.e("Min", min_dist + "");
-            //Log.e("Max" , max_dist+"");
-
-
-            //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
-            MatOfDMatch good_matches = new MatOfDMatch();
-
-            List<DMatch> listGoodMatches = new ArrayList<>();
-
-            int size = descriptors_object.rows();
-
-
-            for (int i = 0; i < size; i++)
-            {
-                float distance = listMatches.get(i).distance;
-
-                float threeMinDist = (float) (2.5 * min_dist);
-
-                if (distance < threeMinDist)
-                {
-                    //good_matches.push_back(matches.col(i));
-                    listGoodMatches.add(listMatches.get(i));
-                }
-            }
-
-            good_matches.fromList(listGoodMatches);
-
-
-            Log.e("Matches", listMatches.size() + "");
-            Log.e("Good Matches", listGoodMatches.size() + "");
-
-            Mat img_matches = new Mat();
-            MatOfByte matOfByte = new MatOfByte();
-            Features2d.drawMatches(img_object, keypoints_object, img_scene, keypoints_scene, good_matches, img_matches, Scalar.all(-1), Scalar.all(-1), matOfByte, Features2d.NOT_DRAW_SINGLE_POINTS);
-
-
-            //List<Point> listPointObj = new ArrayList<>();
-            //List<Point> listPointScene = new ArrayList<>();
-
-            Point pointObj[] = new Point[listGoodMatches.size()];
-            Point pointScene[] = new Point[listGoodMatches.size()];
-
-            List<KeyPoint> listKeyPointObject = keypoints_object.toList();
-            List<KeyPoint> listKeyPointScene = keypoints_scene.toList();
-
-            for (int i = 0; i < listGoodMatches.size(); i++)
-            {
-                //-- Get the keypoints from the good matches
-                pointObj[i] = listKeyPointObject.get(listGoodMatches.get(i).queryIdx).pt;
-                pointScene[i] = listKeyPointScene.get(listGoodMatches.get(i).trainIdx).pt;
-
-            }
-
-            MatOfPoint2f obj = new MatOfPoint2f(pointObj);
-            MatOfPoint2f scene = new MatOfPoint2f(pointScene);
-
-
-            Mat H = Calib3d.findHomography(obj, scene, Calib3d.RANSAC, 1);
-
-
-            MatOfPoint2f obj_corners = new MatOfPoint2f();
-            Point pointObjConners[] = new Point[4];
-            pointObjConners[0] = new Point(0, 0);
-            pointObjConners[1] = new Point(img_object.cols(), 0);
-            pointObjConners[2] = new Point(img_object.cols(), img_object.rows());
-            pointObjConners[3] = new Point(0, img_object.rows());
-
-            obj_corners.fromArray(pointObjConners);
-
-
-            MatOfPoint2f scene_corners = new MatOfPoint2f();
-            Core.perspectiveTransform(obj_corners, scene_corners, H);
-
-
-            //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-            Point p0 = new Point(scene_corners.toList().get(0).x + img_object.cols(), scene_corners.toList().get(0).y + 0);
-            Point p1 = new Point(scene_corners.toList().get(1).x + img_object.cols(), scene_corners.toList().get(1).y + 0);
-            Point p2 = new Point(scene_corners.toList().get(2).x + img_object.cols(), scene_corners.toList().get(2).y + 0);
-            Point p3 = new Point(scene_corners.toList().get(3).x + img_object.cols(), scene_corners.toList().get(3).y + 0);
-
-
-            Scalar scalar = new Scalar(0, 255, 0);
-
-            Core.line(img_matches, p0, p1, scalar, 4);
-            Core.line(img_matches, p1, p2, scalar, 4);
-            Core.line(img_matches, p2, p3, scalar, 4);
-            Core.line(img_matches, p3, p0, scalar, 4);
-
-            return img_matches;
-
-
-        }
-        catch (Exception ex)
-        {
-            Log.e("", "");
-            return null;
-
-        }
-
-
-    }
 }
