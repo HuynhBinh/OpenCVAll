@@ -25,7 +25,6 @@ import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -35,13 +34,11 @@ import org.opencv.features2d.DMatch;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
-import org.opencv.features2d.Features2d;
 import org.opencv.features2d.KeyPoint;
 import org.opencv.highgui.Highgui;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
@@ -97,15 +94,12 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     Point p2;
     Point p3;
 
-    boolean isProcessing = false;
-
-
 
     MatOfDMatch good_matches;// = new MatOfDMatch();
 
     List<Point> listPointScene;
 
-    ReentrantReadWriteLock reentrantReadWriteLock ;
+    ReentrantReadWriteLock reentrantReadWriteLock;
 
     Lock readLock;
     Lock writeLock;
@@ -264,11 +258,9 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     }
 
 
-
     private void detectObject()
     {
 
-        isProcessing = true;
 
         readLock.lock();
 
@@ -278,14 +270,14 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         extractor.compute(img_object, keypoints_object, descriptors_object);
         extractor.compute(img_scene, keypoints_scene, descriptors_scene);
 
-        isProcessing = false;
+        readLock.unlock();
 
 
         if (!descriptors_scene.empty())
         {
             matcher.match(descriptors_object, descriptors_scene, matches);
 
-            readLock.unlock();
+            //readLock.unlock();
 
             //
             listMatches = matches.toList();
@@ -328,7 +320,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             Log.e("Matches", listMatches.size() + "");
             Log.e("Good Matches", listGoodMatches.size() + "");
             //
-
 
 
             if (listGoodMatches.size() > 4)
@@ -388,8 +379,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         else
         {
             Log.e("No descritor", "No descritor");
-            isProcessing = false;
-            readLock.unlock();
+
+            //readLock.unlock();
         }
     }
 
@@ -418,7 +409,7 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
     {
         try
         {
-            writeLock.lock();
+            //writeLock.lock();
 
             try
             {
@@ -426,9 +417,8 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
             }
             finally
             {
-                writeLock.unlock();
+                //writeLock.unlock();
             }
-
 
 
             isRun = true;
@@ -469,7 +459,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
 
 
     }
-
 
 
     @Override
@@ -545,7 +534,6 @@ public class Tutorial3Activity extends Activity implements CvCameraViewListener2
         Toast.makeText(this, fileName + " saved", Toast.LENGTH_SHORT).show();
         return false;
     }
-
 
 
 }

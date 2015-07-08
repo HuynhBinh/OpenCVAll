@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#000000">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="30dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#efefef"
+                android:gravity="center"
+                android:text="@string/intro"/>
+
+            <TextView
+                android:layout_margin="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#CC0000"
+                android:gravity="center"
+                android:text="@string/caution"
+                />
+
+
+            <Button
+                android:id="@+id/btnCamera"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="OpenCV Camera"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+            <Button
+                android:id="@+id/btnTemplateMatching"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Template Matching"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+            <Button
+                android:id="@+id/btnCircleDetection"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Circle Detection"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+            <Button
+                android:id="@+id/btnFindCoutour"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Find Coutour"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+            <Button
+                android:id="@+id/btnFindFeature"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Find Image Feature"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+            <Button
+                android:id="@+id/btnDetectObject"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Detect Object"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+
+            <Button
+                android:id="@+id/btnDetectObjectOnCam"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Detect Object On Camera"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
+
+        </LinearLayout>
+
+    </ScrollView>
+
+
+</LinearLayout>

@@ -3,7 +3,6 @@ package com.em.testopencv2;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -37,9 +36,7 @@ import org.opencv.features2d.KeyPoint;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
@@ -160,7 +157,8 @@ public class MainActivity extends ActionBarActivity
 
             imageViewOriginal.setImageBitmap(bitmap);
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.e("", "");
 
@@ -308,7 +306,8 @@ public class MainActivity extends ActionBarActivity
 
             imageViewOriginal.setImageBitmap(bitmap);
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.e("", "");
 
@@ -373,7 +372,8 @@ public class MainActivity extends ActionBarActivity
 
             imageViewOriginal.setImageBitmap(bitmap);
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
 
         }
@@ -450,7 +450,8 @@ public class MainActivity extends ActionBarActivity
 
             imageViewOriginal.setImageBitmap(bmpTmp);
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
 
         }
@@ -537,7 +538,8 @@ public class MainActivity extends ActionBarActivity
 
             imageView.setImageBitmap(bmp);
 
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Log.e("", "");
         }
@@ -559,6 +561,7 @@ public class MainActivity extends ActionBarActivity
         imageView = (ImageView) findViewById(R.id.imageView);
         imageViewTemplate = (ImageView) findViewById(R.id.imageView1);
         imageViewOriginal = (ImageView) findViewById(R.id.imageOgri);
+
 
     }
 

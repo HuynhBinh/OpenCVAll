@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">OpenCV Samples</string>
+    <string name="intro">huynhbinh0511@gmail.com\nSend me an email if you want to get the code :-)</string>
+    <string name="caution">I am currently not using thread in this app, because I just want to make it as a simple example of how to use the function. So, some function may take time to process. If you got No Responding, please click WAIT</string>
+
+</resources>
