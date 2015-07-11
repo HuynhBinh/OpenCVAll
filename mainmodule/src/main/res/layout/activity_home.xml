@@ -112,6 +112,17 @@
                 />
 
 
+            <Button
+                android:id="@+id/btnMultipleChoice"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                android:text="Multiple Choice"
+                android:background="#666666"
+                android:textColor="#ffffff"
+                android:textStyle="bold"
+                />
+
         </LinearLayout>
 
     </ScrollView>

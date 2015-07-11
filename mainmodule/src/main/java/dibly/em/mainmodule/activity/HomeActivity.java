@@ -24,6 +24,7 @@ public class HomeActivity extends Activity
     Button btnFindFeature;
 
     Button btnDetectObjectOnCam;
+    Button btnMultipleChoice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -104,6 +105,16 @@ public class HomeActivity extends Activity
             }
         });
 
+        btnMultipleChoice.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                Intent intent = new Intent(HomeActivity.this, MultipleChoiceActivity.class);
+                startActivity(intent);
+            }
+        });
+
     }
 
     private void initView()
@@ -119,5 +130,6 @@ public class HomeActivity extends Activity
         btnFindFeature = (Button) findViewById(R.id.btnFindFeature);
 
         btnDetectObjectOnCam = (Button) findViewById(R.id.btnDetectObjectOnCam);
+        btnMultipleChoice = (Button) findViewById(R.id.btnMultipleChoice);
     }
 }
